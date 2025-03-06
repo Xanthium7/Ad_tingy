@@ -12,7 +12,7 @@ load_dotenv()
 
 openaikey = os.getenv("OPENAI_API_KEY")
 os.environ['OPENAI_API_KEY'] = openaikey
-model = "gpt-4o"
+model = "gpt-4o-mini"
 llm = ChatOpenAI(temperature=0.7, max_tokens=300)
 memory = ConversationBufferWindowMemory(
     memory_key="chat_history",
@@ -20,6 +20,7 @@ memory = ConversationBufferWindowMemory(
     k=4,
     return_messages=True
 )
+
 
 ch = True
 
