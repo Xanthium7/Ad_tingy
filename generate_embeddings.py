@@ -3,8 +3,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 
-loaders = [PyPDFLoader('./law.pdf'), PyPDFLoader('./law2.pdf'),
-           PyPDFLoader('./law3.pdf'), PyPDFLoader('./law4.pdf')]
+loaders = [PyPDFLoader('./law.pdf')]
 
 docs = []
 
