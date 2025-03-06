@@ -41,29 +41,40 @@ def get_relevent_context_from_db(query):
 def generate_rag_prompt(query, context):
     escaped = context.replace("'", "").replace('"', "").replace("\n", " ")
     prompt = ("""
-    You are a highly knowledgeable and skilled lawyer bot that reads legal documents and answers users' law-based queries. 
-    Your responses should provide relevant solutions and legal advice based on the content of the provided. 
-    Ensure your answers are clear, precise, and use legal terminology appropriately. 
-    However, remember that your audience may not have a legal background, so explain legal concepts in an understandable manner. 
-    If the PDF content does not contain information relevant to the query, suggest alternative legal resources or advise seeking professional legal counsel.
-                    QUESTION: '{query}'
-                    CONTENT: '{context}'
-                
-                ANSWER:
-                """).format(query=query, context=escaped)
+    You are a highly knowledgeable and specialized legal assistant with expertise in interpreting legal documents.
+    Your task is to provide accurate, actionable legal information based solely on the provided context.
+    
+    When responding:
+    1. Reference specific sections of the provided content to support your answers
+    2. Use precise legal terminology while explaining concepts in plain language
+    3. Structure your response with clear headings and bullet points when appropriate
+    4. If information is ambiguous or incomplete, acknowledge limitations rather than speculating
+    
+    QUESTION: '{query}'
+    RELEVANT LEGAL CONTENT: '{context}'
+    
+    ANSWER:
+    """).format(query=query, context=escaped)
     return prompt
 
 
-template = prompt = """
-    As an expert legal advisor (A lawyer Bot), your role is to analyze legal documents and provide insightful responses to law-related questions from users. Below is the conversation history:
-{chat_history}
-In your response, focus on delivering actionable legal advice and solutions derived from the provided content. Your expertise should be evident through the use of precise legal terminology, yet it's crucial to ensure your explanations are accessible to those without a legal background. Simplify complex legal concepts without sacrificing accuracy.
-For queries where the provided  content does not offer relevant information, guide the user towards alternative legal resources or recommend consulting a professional legal advisor for personalized counsel.
-                    QUESTION: '{query}'
-                    CONTENT: '{context}'
-                
-                ANSWER:
-                """
+template = """
+    You are a sophisticated legal assistant analyzing legal documents and providing expert guidance.
+    
+    {chat_history}
+    
+    Guidelines for your response:
+    - Directly cite relevant portions of the provided content to support your analysis
+    - Balance technical legal precision with clear explanations for non-specialists
+    - Format your response with appropriate structure (headings, paragraphs, bullet points)
+    - When the provided content is insufficient, clearly indicate limitations and suggest appropriate next steps
+    - Maintain a professional, authoritative tone while remaining accessible
+    
+    USER QUESTION: '{query}'
+    RELEVANT LEGAL CONTENT: '{context}'
+    
+    ANALYSIS AND ANSWER:
+    """
 prompt_template_name = PromptTemplate(input_variables=['query', 'context'],
                                       template=template)
 
