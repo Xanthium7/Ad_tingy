@@ -8,7 +8,41 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 
+
 load_dotenv()
+
+# =====================================================================
+# PRODUCT CONFIGURATION - Customize this section for different products
+# =====================================================================
+
+# Main product information (brand, product name, category)
+selling_product_info = {
+    "brand": "Nike",
+    "product_category": "Athletic footwear and apparel",
+    "website": "www.nike.com",
+    "target_audience": "Athletes and fitness enthusiasts",
+    "brand_voice": "Inspirational, motivational, performance-focused",
+    "key_selling_points": [
+        "Innovative technology",
+        "Superior performance",
+        "Stylish design",
+        "Athlete endorsements",
+        "Quality materials"
+    ],
+    "call_to_action": "Shop now at www.nike.com"
+}
+
+# Marketing tone and style customization
+marketing_style = {
+    "tone": "Motivational and energetic",
+    "emoji_usage": "Moderate",  # Options: None, Light, Moderate, Heavy
+    "formality": "Casual but professional",
+    "focus": "Performance benefits and style"
+}
+
+# =====================================================================
+# INITIALIZATION - LLM setup and memory
+# =====================================================================
 
 openaikey = os.getenv("OPENAI_API_KEY")
 os.environ['OPENAI_API_KEY'] = openaikey
@@ -20,7 +54,6 @@ memory = ConversationBufferWindowMemory(
     k=4,
     return_messages=True
 )
-
 
 ch = True
 
@@ -39,51 +72,76 @@ def get_relevent_context_from_db(query):
 
 def generate_rag_prompt(query, context):
     escaped = context.replace("'", "").replace('"', "").replace("\n", " ")
-    prompt = ("""
-    You are an enthusiastic and persuasive marketing specialist for the brand described in the context.
-    Your goal is to answer customer questions while generating excitement about the products.
+
+    prompt = f"""
+    You are an enthusiastic and persuasive marketing specialist for {selling_product_info['brand']}, 
+    focusing specifically on their {selling_product_info['product_category']}.
     
-    When responding:
-    1. Use a vibrant, engaging tone that matches the brand's voice
-    2. Highlight key features and benefits of the products
-    3. Include specific product details from the context to build credibility
-    4. Add emotional appeals that connect with the customer's needs and desires
-    5. ALWAYS include a call-to-action with the website link from the context
-    6. Use short paragraphs, bullet points, and occasional emoji for visual appeal
-    7. Create a sense of urgency or exclusivity where appropriate
+    MARKETING APPROACH:
+    - Use a {marketing_style['tone']} tone 
+    - Use {marketing_style['emoji_usage']} emoji frequency
+    - Maintain {marketing_style['formality']} language
+    - Focus primarily on {marketing_style['focus']}
+    
+    When responding about {selling_product_info['brand']} products:
+    1. Write in the distinctive voice of {selling_product_info['brand']}
+    2. Highlight these key selling points: {', '.join(selling_product_info['key_selling_points'])}
+    3. Target your message for {selling_product_info['target_audience']}
+    4. Include specific product details from the context to build credibility
+    5. Add emotional appeals that connect with the customer's needs and desires
+    6. ALWAYS end with this call-to-action: "{selling_product_info['call_to_action']}"
+    7. Use short paragraphs and bullet points for key features
     
     CUSTOMER QUESTION: '{query}'
-    PRODUCT INFORMATION: '{context}'
+    PRODUCT INFORMATION: '{escaped}'
     
     RESPOND WITH AN ATTENTION-GRABBING ADVERTISEMENT:
-    """).format(query=query, context=escaped)
+    """
     return prompt
 
 
 template = """
-    You are a brilliant marketing copywriter for the brand in the provided context.
+    You are a brilliant marketing copywriter specializing in {brand} {product_category}.
     
     {chat_history}
     
-    GUIDELINES FOR YOUR ADVERTISEMENT RESPONSE:
-    - Start with an attention-grabbing headline or statement
-    - Write in a conversational, exciting tone that creates emotional connection
-    - Highlight specific product benefits that address the customer's question
-    - Include persuasive language and power words that drive action
-    - Format your response with short paragraphs, bullet points for key features
-    - Use the brand's distinctive voice and terminology from the context
-    - End with a compelling call-to-action and link to the website
-    - Keep the overall length concise but comprehensive
+    PRODUCT DETAILS:
+    {brand} - {product_category}
+    Target Audience: {target_audience}
+    Key Selling Points: {key_selling_points}
+    Brand Voice: {brand_voice}
     
-    CUSTOMER QUERY: '{query}'
-    BRAND AND PRODUCT INFORMATION: '{context}'
+    RESPONSE GUIDELINES:
+    - Be concise and direct - keep total response under 100 words
+    - Sound helpful rather than promotional
+    - Address the customer's question first and foremost
+    - Naturally incorporate 1-2 key {brand} features relevant to the query
+    - Use {brand} slogans only when they directly apply to the question
+    - Limit to 1-2 short paragraphs maximum
+    - Include "{call_to_action}" only if it helps answer the query
     
-    YOUR PERSUASIVE ADVERTISEMENT RESPONSE:
-    """
+    CUSTOMER QUERY ABOUT {brand}: '{query}'
+    RELEVANT {brand} PRODUCT INFORMATION: '{context}'
+    
+    YOUR PERSUASIVE {brand} ADVERTISEMENT:
+    """.format(
+    brand=selling_product_info['brand'],
+    product_category=selling_product_info['product_category'],
+    target_audience=selling_product_info['target_audience'],
+    key_selling_points=", ".join(selling_product_info['key_selling_points']),
+    brand_voice=selling_product_info['brand_voice'],
+    call_to_action=selling_product_info['call_to_action'],
+    tone=marketing_style['tone'],
+    emoji_usage=marketing_style['emoji_usage'],
+    formality=marketing_style['formality'],
+    focus=marketing_style['focus'],
+    query="{query}",
+    context="{context}",
+    chat_history="{chat_history}"
+)
+
 prompt_template = PromptTemplate(input_variables=['query', 'context', 'chat_history'],
                                  template=template)
-
-# Replace LLMChain with a runnable sequence
 
 
 def get_chat_history(inputs):
