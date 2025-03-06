@@ -1,13 +1,12 @@
 import os
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
-from langchain.llms import OpenAI
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain.memory import ConversationBufferWindowMemory
-from langchain.memory import ConversationBufferMemory
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
+from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 
 load_dotenv()
 
@@ -15,13 +14,12 @@ openaikey = os.getenv("OPENAI_API_KEY")
 os.environ['OPENAI_API_KEY'] = openaikey
 model = "gpt-4o"
 llm = ChatOpenAI(temperature=0.7, max_tokens=300)
-# memory = ConversationBufferWindowMemory(k=3)
 memory = ConversationBufferWindowMemory(
     memory_key="chat_history",
     input_key="query",
-    k=4
+    k=4,
+    return_messages=True
 )
-
 
 ch = True
 
@@ -41,50 +39,71 @@ def get_relevent_context_from_db(query):
 def generate_rag_prompt(query, context):
     escaped = context.replace("'", "").replace('"', "").replace("\n", " ")
     prompt = ("""
-    You are a highly knowledgeable and specialized legal assistant with expertise in interpreting legal documents.
-    Your task is to provide accurate, actionable legal information based solely on the provided context.
+    You are an enthusiastic and persuasive marketing specialist for the brand described in the context.
+    Your goal is to answer customer questions while generating excitement about the products.
     
     When responding:
-    1. Reference specific sections of the provided content to support your answers
-    2. Use precise legal terminology while explaining concepts in plain language
-    3. Structure your response with clear headings and bullet points when appropriate
-    4. If information is ambiguous or incomplete, acknowledge limitations rather than speculating
+    1. Use a vibrant, engaging tone that matches the brand's voice
+    2. Highlight key features and benefits of the products
+    3. Include specific product details from the context to build credibility
+    4. Add emotional appeals that connect with the customer's needs and desires
+    5. ALWAYS include a call-to-action with the website link from the context
+    6. Use short paragraphs, bullet points, and occasional emoji for visual appeal
+    7. Create a sense of urgency or exclusivity where appropriate
     
-    QUESTION: '{query}'
-    RELEVANT LEGAL CONTENT: '{context}'
+    CUSTOMER QUESTION: '{query}'
+    PRODUCT INFORMATION: '{context}'
     
-    ANSWER:
+    RESPOND WITH AN ATTENTION-GRABBING ADVERTISEMENT:
     """).format(query=query, context=escaped)
     return prompt
 
 
 template = """
-    You are a sophisticated legal assistant analyzing legal documents and providing expert guidance.
+    You are a brilliant marketing copywriter for the brand in the provided context.
     
     {chat_history}
     
-    Guidelines for your response:
-    - Directly cite relevant portions of the provided content to support your analysis
-    - Balance technical legal precision with clear explanations for non-specialists
-    - Format your response with appropriate structure (headings, paragraphs, bullet points)
-    - When the provided content is insufficient, clearly indicate limitations and suggest appropriate next steps
-    - Maintain a professional, authoritative tone while remaining accessible
+    GUIDELINES FOR YOUR ADVERTISEMENT RESPONSE:
+    - Start with an attention-grabbing headline or statement
+    - Write in a conversational, exciting tone that creates emotional connection
+    - Highlight specific product benefits that address the customer's question
+    - Include persuasive language and power words that drive action
+    - Format your response with short paragraphs, bullet points for key features
+    - Use the brand's distinctive voice and terminology from the context
+    - End with a compelling call-to-action and link to the website
+    - Keep the overall length concise but comprehensive
     
-    USER QUESTION: '{query}'
-    RELEVANT LEGAL CONTENT: '{context}'
+    CUSTOMER QUERY: '{query}'
+    BRAND AND PRODUCT INFORMATION: '{context}'
     
-    ANALYSIS AND ANSWER:
+    YOUR PERSUASIVE ADVERTISEMENT RESPONSE:
     """
-prompt_template_name = PromptTemplate(input_variables=['query', 'context'],
-                                      template=template)
+prompt_template = PromptTemplate(input_variables=['query', 'context', 'chat_history'],
+                                 template=template)
 
-result_gen_chain = LLMChain(
-    llm=llm, prompt=prompt_template_name, output_key="answer", memory=memory)
+# Replace LLMChain with a runnable sequence
+
+
+def get_chat_history(inputs):
+    return memory.load_memory_variables({})["chat_history"]
+
+
+result_gen_chain = (
+    {
+        "query": lambda x: x["query"],
+        "context": lambda x: x["context"],
+        "chat_history": get_chat_history
+    }
+    | prompt_template
+    | llm
+    | StrOutputParser()
+)
 
 
 def generate_answer(prompt):
-    answer = llm(prompt)
-    return answer
+    answer = llm.invoke(prompt)
+    return answer.content
 
 
 while ch:
@@ -95,20 +114,17 @@ while ch:
     if query == "exit":
         break
     context = get_relevent_context_from_db(query)
-    prompt = generate_rag_prompt(query, context)
-    # answer = generate_answer(prompt)
 
     inputs = {"query": query, "context": context}
 
     try:
-        answer = result_gen_chain(inputs)
+        answer = result_gen_chain.invoke(inputs)
         print("-----------------------------------------------------------------------\n")
-        # Assuming result_gen_chain.memory is the correct way to access memory
-        # print(result_gen_chain.memory)
         print("\n\n\n\n")
         print("YOU: ", query)
-        print("BOT: ", answer["answer"])
-        # Assuming answer contains the response in a 'content' attribute
-        # print("BOT: ", answer.content)
+        print("BOT: ", answer)
+
+        # Save the interaction to memory
+        memory.save_context({"query": query}, {"output": answer})
     except ValueError as e:
         print(f"Error: {e}")
