@@ -11,7 +11,7 @@ urls = [
 
 ]
 
-
+# Load PDF documents
 pdf_loaders = [PyPDFLoader('./Adinfo.pdf')]
 docs = []
 
