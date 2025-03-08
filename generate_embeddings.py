@@ -9,6 +9,7 @@ urls = [
     "https://www.nike.com/in/w/womens-shoes-5e1x6zy7ok",
     "https://www.nike.com/in/w/kids-shoes-1gdj0zy7ok",
 
+
 ]
 
 # Load PDF documents

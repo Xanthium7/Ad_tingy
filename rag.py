@@ -11,11 +11,7 @@ from langchain_core.output_parsers import StrOutputParser
 
 load_dotenv()
 
-# =====================================================================
-# PRODUCT CONFIGURATION - Customize this section for different products
-# =====================================================================
 
-# Main product information (brand, product name, category)
 selling_product_info = {
     "brand": "Nike",
     "product_category": "Athletic footwear and apparel",
@@ -32,17 +28,14 @@ selling_product_info = {
     "call_to_action": "Shop now at www.nike.com"
 }
 
-# Marketing tone and style customization
+
 marketing_style = {
     "tone": "Motivational and energetic",
-    "emoji_usage": "Moderate",  # Options: None, Light, Moderate, Heavy
+    "emoji_usage": "Moderate",
     "formality": "Casual but professional",
     "focus": "Performance benefits and style"
 }
 
-# =====================================================================
-# INITIALIZATION - LLM setup and memory
-# =====================================================================
 
 openaikey = os.getenv("OPENAI_API_KEY")
 os.environ['OPENAI_API_KEY'] = openaikey
