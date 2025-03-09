@@ -83,7 +83,6 @@ class SessionResponse(BaseModel):
     message: str
 
 
-# Session management
 sessions = {}
 
 
@@ -193,7 +192,6 @@ async def create_session():
 
 @app.delete("/session/{session_id}", response_model=SessionResponse)
 async def clear_session(session_id: str):
-    """Clear the history for a specific session"""
     if session_id in sessions:
         sessions[session_id] = ConversationBufferWindowMemory(
             memory_key="chat_history",
@@ -208,7 +206,7 @@ async def clear_session(session_id: str):
 
 @app.get("/health")
 async def health_check():
-    """Check if the service is running"""
+
     return {"status": "healthy", "service": "Marketing RAG API"}
 
 if __name__ == "__main__":
