@@ -91,25 +91,20 @@ website_info_agent = Agent(
     - Emphasize relevant key selling points: {', '.join(selling_product_info['key_selling_points'])}
     - Direct customers to {selling_product_info['website']} for purchase
     - End with a personalized call-to-action that includes "{selling_product_info['call_to_action']}"
-    - Keep responses concise (under 300 words)
-    - Only provide information that can be found on the {selling_product_info['website']} or in its subdomains
-    - NEVER make up information if it's not on the {selling_product_info['website']} or its subdomains - admit when you don't have the specific information
-    - If refereing a product, use the exact product name and code from the website and also give a direct link to the product page
-    - If the product is not available, provide a similar product suggestion from the website
+    - Keep responses concise (under 500 words)
+    - CRITICAL: ONLY use information from the official Nike website (nike.com) and its subdomains
+    - NEVER reference or use information from third-party websites like academy.com, shopstyle.com, etc.
+    - If you cannot find specific product information on nike.com, explicitly state that you don't have that information
+    - When searching for products, add "site:nike.com" to your search queries
+    - If refereing a product, use the exact product name and code from the nike.com website and provide the direct nike.com link
+    - If the product is not available on nike.com, only suggest similar products found on nike.com
+    - Verify all URLs in your response - they must be from nike.com domain only
     """,
     model="gpt-4o-mini",
     tools=[WebSearchTool(
-        user_location={"type": "approximate", "country": "IN"}),],
+        user_location={"type": "approximate", "country": "IN"},
+    ),],
 )
-
-
-# Agent that determines which type of query (general or specific product)
-# query_classifier_agent = Agent(
-#     name="Query Classifier",
-#     instructions="Determine if the query is asking about a specific Nike product or general Nike information.",
-#     output_type=ProductQueryType,
-#     model="gpt-4o-mini",
-# )
 
 
 # Triage agent to handle Nike product queries
@@ -129,6 +124,7 @@ nike_triage_agent = Agent(
     Your responses should be concise and informative.
     Regardless of which specialist handles the query, ensure responses emphasize {selling_product_info['brand']}'s 
     key advantages: {', '.join(selling_product_info['key_selling_points'])}.
+    
     """,
     handoffs=[pdf_info_agent, website_info_agent],
     model="gpt-4o-mini",
