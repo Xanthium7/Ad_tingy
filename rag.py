@@ -181,7 +181,6 @@ while ch:
         print("YOU: ", query)
         print("BOT: ", answer)
 
-        # Save the interaction to memory
         memory.save_context({"query": query}, {"output": answer})
     except ValueError as e:
         print(f"Error: {e}")
