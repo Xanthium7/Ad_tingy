@@ -26,7 +26,12 @@ selling_product_info = {
         "Athlete endorsements",
         "Quality materials"
     ],
-    "call_to_action": "Shop now at www.nike.com"
+    "call_to_action": "Shop now at www.nike.com",
+    "location": {
+        "country": "IN",
+        "country_name": "India",
+        "region_code": "in"
+    }
 }
 
 
@@ -55,7 +60,7 @@ def get_relevant_context_from_db(query: str) -> str:
 # Agent that retrieves information from Adinfo.pdf (using our vector DB)
 pdf_info_agent = Agent(
     name="Nike PDF Information Specialist",
-    handoff_description="Specialist for general Nike product information",
+    handoff_description="Specialist for general Nike brand information",
     instructions=f"""You are a knowledgeable Nike marketing specialist with access to Nike's PDF documentation.
     When asked about Nike products or company information, provide informative responses with these guidelines:
     - IMPORTANT: Always check the provided context first and use SPECIFIC FACTUAL INFORMATION from it
@@ -71,12 +76,11 @@ pdf_info_agent = Agent(
     
     The context from the PDF is your primary source of truth. Rely on it completely for factual information.
     """,
-    model="gpt-4o-mini",
+    model="gpt-4o",
     tools=[get_relevant_context_from_db],
 )
 
 
-# Agent that searches for specific product information from Nike website
 website_info_agent = Agent(
     name="Nike Website Product Specialist",
     handoff_description="Specialist for specific Nike product details",
@@ -85,25 +89,23 @@ website_info_agent = Agent(
     - Provide detailed specifications about the requested product
     - Include materials, technologies, and pricing when available
     - Compare with similar products when relevant
-    - Use exact product names, codes, and details from the {selling_product_info['brand']} website
+    - Use exact product names and codes from the {selling_product_info['brand']} website
     - Consistently maintain the {selling_product_info['brand_voice']} tone
     - Target your communication specifically for {selling_product_info['target_audience']}
     - Emphasize relevant key selling points: {', '.join(selling_product_info['key_selling_points'])}
-    - Direct customers to {selling_product_info['website']} for purchase
+    - IMPORTANT: Do NOT provide direct product purchase links as they may be region-specific
+    - Instead, direct users to the main Nike website (nike.com) or appropriate section (shoes, clothing, etc.)
+    - For purchase inquiries, recommend visiting nike.com/{selling_product_info["location"]["region_code"]} without specific product URLs
     - End with a personalized call-to-action that includes "{selling_product_info['call_to_action']}"
-    - Keep responses concise (under 500 words)
-    - CRITICAL: ONLY use information from the official Nike website (nike.com) and its subdomains
-    - NEVER reference or use information from third-party websites like academy.com, shopstyle.com, etc.
-    - If you cannot find specific product information on nike.com, explicitly state that you don't have that information
-    - When searching for products, add "site:nike.com" to your search queries
-    - If refereing a product, use the exact product name and code from the nike.com website and provide the direct nike.com link
-    - If the product is not available on nike.com, only suggest similar products found on nike.com
-    - Verify all URLs in your response - they must be from nike.com domain only
+    - Keep responses concise (under 300 words)
+    - Only provide information that can be found on the {selling_product_info['website']} or in its subdomains
+    - NEVER make up information if it's not on the {selling_product_info['website']} or its subdomains - admit when you don't have the specific information
+    - If referring to a product, use the exact product name and code from the website but DO NOT include direct product links
+    - If the product is not available, provide a similar product suggestion from the website
     """,
-    model="gpt-4o-mini",
+    model="gpt-4o",
     tools=[WebSearchTool(
-        user_location={"type": "approximate", "country": "IN"},
-    ),],
+        user_location={"type": "approximate", "country": selling_product_info["location"]["country"]}),],
 )
 
 
@@ -127,7 +129,7 @@ nike_triage_agent = Agent(
     
     """,
     handoffs=[pdf_info_agent, website_info_agent],
-    model="gpt-4o-mini",
+    model="gpt-4o",
 )
 
 
