@@ -1,20 +1,10 @@
-"""Full-site crawler for vegeta.com/en that builds a Chroma vector store.
 
-This script:
-1. Crawls https://vegeta.com/en and all internal sublinks under /en (same domain)
-2. Extracts readable text from each page (stripping nav, footer, scripts, styles)
-3. Chunks the text
-4. Embeds with sentence-transformers/all-MiniLM-L6-v2
-5. Persists to ./vegeta/chroma_db_nccn
-
-Adjust MAX_PAGES or MAX_DEPTH below as needed.
-"""
 
 from __future__ import annotations
 from langchain_core.documents import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 
 import os
 import re
