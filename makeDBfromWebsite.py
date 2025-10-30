@@ -29,6 +29,7 @@ REQUEST_DELAY = 0.5  # Seconds between requests (politeness)
 TIMEOUT = 15
 
 PERSIST_DIR = "./vegeta/chroma_db_nccn"
+EXTRA_MARKDOWN_PATHS = ["./vegeta_doc/queries.md"]
 
 
 def normalize_url(url: str) -> str:
@@ -90,7 +91,8 @@ def crawl_site(start_url: str, allowed_prefix: str) -> List[Document]:
             if h in content_hashes:
                 continue
             content_hashes.add(h)
-            docs.append(Document(page_content=text, metadata={'source': url}))
+            docs.append(Document(page_content=text, metadata={
+                        'source': url, 'url': url}))
             print(f"[PAGE {len(docs)}] {url} (words={len(text.split())})")
 
             if depth < MAX_DEPTH:
@@ -108,6 +110,33 @@ def crawl_site(start_url: str, allowed_prefix: str) -> List[Document]:
             print(f"[ERROR] {url}: {e}")
         time.sleep(REQUEST_DELAY)
 
+    return docs
+
+
+def load_markdown_documents(paths: List[str]) -> List[Document]:
+    docs: List[Document] = []
+    for path in paths:
+        abs_path = os.path.abspath(path)
+        if not os.path.isfile(abs_path):
+            print(f"[WARN] Markdown source not found: {path}")
+            continue
+        try:
+            with open(abs_path, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+        except OSError as exc:
+            print(f"[WARN] Failed to read {path}: {exc}")
+            continue
+        if not content:
+            print(f"[WARN] Markdown source empty: {path}")
+            continue
+        # Preserve relative path in metadata for transparency
+        rel_path = os.path.relpath(abs_path)
+        docs.append(Document(page_content=content, metadata={
+            'source': rel_path.replace('\\', '/'),
+            'url': rel_path.replace('\\', '/'),
+            'source_type': 'markdown'
+        }))
+        print(f"[MD] Loaded {rel_path}")
     return docs
 
 
@@ -147,6 +176,10 @@ def main():
     print(
         f"Starting crawl at {START_URL}\nMax pages: {MAX_PAGES} | Max depth: {MAX_DEPTH}")
     docs = crawl_site(START_URL, ALLOWED_PREFIX)
+    markdown_docs = load_markdown_documents(EXTRA_MARKDOWN_PATHS)
+    if markdown_docs:
+        docs.extend(markdown_docs)
+        print(f"Markdown documents added: {len(markdown_docs)}")
     print("Crawl complete. Building vector store...")
     build_vectorstore(docs)
     print("Done.")
