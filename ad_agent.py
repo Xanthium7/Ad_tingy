@@ -4,10 +4,10 @@ import asyncio
 import os
 from dotenv import load_dotenv
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_chroma import Chroma  
+from langchain_chroma import Chroma
 from langchain_openai import ChatOpenAI
 
-load_dotenv()
+load_dotenv(override=True)
 
 # OpenAI configuration
 os.environ['OPENAI_API_KEY'] = os.getenv("OPENAI_API_KEY")
@@ -149,30 +149,6 @@ website_info_agent = Agent(
 )
 
 
-# Vegeta brand knowledge agent (uses crawled Vegeta website data)
-vegeta_site_agent = Agent(
-    name="Vegeta Culinary Information Specialist",
-    handoff_description="Specialist for Vegeta products, seasonings, and recipes",
-    instructions=f"""You are a {vegeta_product_info['brand']} culinary knowledge specialist with access to structured website context.
-    Your mission: help users with {vegeta_product_info['brand']} product details, usage ideas, flavor guidance, and recipe inspiration.
-    Guidelines:
-    - ALWAYS ground answers strictly in the provided context chunks.
-    - When referencing a product or recipe, cite the exact product/recipe name as on the site.
-    - If multiple variants exist (e.g., Natur, Original, Grill), clarify differences succinctly.
-    - Emphasize these key advantages: {', '.join(vegeta_product_info['key_selling_points'])}.
-    - Tone: {vegeta_product_info['brand_voice']} — practical, encouraging, flavor-forward.
-    - If user asks for substitutions or unavailable info, be transparent and suggest checking vegeta.com/en for latest updates.
-    - MANDATORY: After the main answer, add a section titled 'Sources:' and list each DISTINCT SOURCE URL you relied on (one per line). Do not invent URLs.
-    - Keep responses concise (< 220 words) unless the user explicitly asks for a deep dive.
-    - NEVER fabricate nutritional data, ingredient percentages, or undisclosed proprietary details.
-    - If the query is outside Vegeta scope, politely state that and redirect toward culinary usage questions.
-    End every answer with the call-to-action: "{vegeta_product_info['call_to_action']}".
-    """,
-    model="gpt-4o",
-    tools=[get_vegeta_context],
-)
-
-
 # Triage agent to handle Nike product queries
 nike_triage_agent = Agent(
     name="Nike Product Information Assistant",
@@ -194,6 +170,31 @@ nike_triage_agent = Agent(
     """,
     handoffs=[pdf_info_agent, website_info_agent],
     model="gpt-4o",
+)
+
+
+# Vegeta brand knowledge agent (uses crawled Vegeta website data)
+vegeta_site_agent = Agent(
+    name="Vegeta Culinary Information Specialist",
+    handoff_description="Specialist for Vegeta products, seasonings, and recipes",
+    instructions=f"""You are a {vegeta_product_info['brand']} culinary knowledge specialist with access to structured website context.
+    Your mission: help users with {vegeta_product_info['brand']} product details, usage ideas, flavor guidance, and recipe inspiration.
+    Guidelines:
+    - ALWAYS ground answers strictly in the provided context chunks.
+    - When referencing a product or recipe, cite the exact product/recipe name as on the site.
+    - If multiple variants exist (e.g., Natur, Original, Grill), clarify differences succinctly.
+    - Emphasize these key advantages: {', '.join(vegeta_product_info['key_selling_points'])}.
+    - Tone: {vegeta_product_info['brand_voice']} — practical, encouraging, flavor-forward.
+    - If user asks for substitutions or unavailable info, be transparent and suggest checking vegeta.com/en for latest updates.
+    - MANDATORY: After the main answer, add a section titled 'Sources:' and list each DISTINCT SOURCE URL you relied on (one per line). Do not invent URLs.
+    - After citing sources, include a short Vegeta promotional note that ties directly to the users question (e.g., highlight health benefits for nutrition questions, flavor versatility for recipe questions).
+    - Keep responses concise (< 220 words) unless the user explicitly asks for a deep dive.
+    - NEVER fabricate nutritional data, ingredient percentages, or undisclosed proprietary details.
+    - If the query is outside Vegeta scope, politely state that and redirect toward culinary usage questions.
+    End every answer with the call-to-action: "{vegeta_product_info['call_to_action']}".
+    """,
+    model="gpt-4o",
+    tools=[get_vegeta_context],
 )
 
 

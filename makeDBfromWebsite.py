@@ -6,6 +6,8 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 
+import argparse
+
 import os
 import re
 import time
@@ -140,7 +142,7 @@ def load_markdown_documents(paths: List[str]) -> List[Document]:
     return docs
 
 
-def build_vectorstore(docs: List[Document]):
+def build_vectorstore(docs: List[Document], *, rebuild: bool = True): # '*'  basically means to force keyword args after this
     if not docs:
         raise ValueError("No documents collected from crawl.")
 
@@ -154,34 +156,76 @@ def build_vectorstore(docs: List[Document]):
         model_name="sentence-transformers/all-MiniLM-L6-v2", model_kwargs={'device': 'cpu'}
     )
 
-    # Optionally clear existing directory to avoid stale data
-    if os.path.isdir(PERSIST_DIR):
-        # Only remove collection files inside to keep dir; safer than full rm
-        for root, dirs, files in os.walk(PERSIST_DIR):
-            for f in files:
-                try:
-                    os.remove(os.path.join(root, f))
-                except OSError:
-                    pass
-    os.makedirs(PERSIST_DIR, exist_ok=True)
+    if rebuild:
+        # Clear existing directory contents for a clean rebuild
+        if os.path.isdir(PERSIST_DIR):
+            for root, dirs, files in os.walk(PERSIST_DIR):
+                for f in files:
+                    try:
+                        os.remove(os.path.join(root, f))
+                    except OSError:
+                        pass
+        os.makedirs(PERSIST_DIR, exist_ok=True)
+        vectorstore = Chroma.from_documents(
+            split_docs, embedding_function, persist_directory=PERSIST_DIR)
+        print(
+            f"Vector store rebuilt. Total embeddings: {vectorstore._collection.count()}")
+        return vectorstore
 
-    vectorstore = Chroma.from_documents(
-        split_docs, embedding_function, persist_directory=PERSIST_DIR)
+    # Incremental update path: reuse existing store and append new chunks
+    if not os.path.isdir(PERSIST_DIR) or not os.listdir(PERSIST_DIR):
+        print(
+            "[WARN] Existing vector store not found or empty; performing full rebuild instead.")
+        return build_vectorstore(docs, rebuild=True)
+
+    vectorstore = Chroma(
+        persist_directory=PERSIST_DIR, embedding_function=embedding_function)
+
+    sources_to_refresh = {
+        doc.metadata.get('source')
+        for doc in split_docs
+        if doc.metadata.get('source')
+    }
+    for source in sources_to_refresh:
+        vectorstore.delete(where={'source': source})
+
+    vectorstore.add_documents(split_docs)
+    vectorstore.persist()
     print(
-        f"Vector store built. Total embeddings: {vectorstore._collection.count()}")
+        f"Vector store updated incrementally. Total embeddings: {vectorstore._collection.count()}")
     return vectorstore
 
 
 def main():
-    print(
-        f"Starting crawl at {START_URL}\nMax pages: {MAX_PAGES} | Max depth: {MAX_DEPTH}")
-    docs = crawl_site(START_URL, ALLOWED_PREFIX)
+    parser = argparse.ArgumentParser(
+        description="Build or update the Vegeta knowledge base.")
+    parser.add_argument(
+        "--markdown-only",
+        action="store_true",
+        help="Skip website crawl and append only markdown documents to the existing vector store."
+    )
+    args = parser.parse_args()
+
+    docs: List[Document] = []
+
+    if not args.markdown_only:
+        print(
+            f"Starting crawl at {START_URL}\nMax pages: {MAX_PAGES} | Max depth: {MAX_DEPTH}")
+        docs.extend(crawl_site(START_URL, ALLOWED_PREFIX))
+    else:
+        print("Skipping website crawl (markdown-only mode).")
+
     markdown_docs = load_markdown_documents(EXTRA_MARKDOWN_PATHS)
     if markdown_docs:
         docs.extend(markdown_docs)
         print(f"Markdown documents added: {len(markdown_docs)}")
-    print("Crawl complete. Building vector store...")
-    build_vectorstore(docs)
+
+    if not docs:
+        print("No documents to process. Exiting.")
+        return
+
+    print("Building vector store...")
+    build_vectorstore(docs, rebuild=not args.markdown_only)
     print("Done.")
 
 
