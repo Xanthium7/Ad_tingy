@@ -34,6 +34,13 @@ PERSIST_DIR = "./vegeta/chroma_db_nccn"
 EXTRA_MARKDOWN_PATHS = ["./vegeta_doc/queries.md"]
 
 
+emb = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+db = Chroma(persist_directory="./vegeta/chroma_db_nccn", embedding_function=emb)
+try:
+    print("Count:", db._collection.count())
+except Exception as e:
+    print("Could not read collection count:", e)
+
 def normalize_url(url: str) -> str:
     # Remove fragments, normalize trailing slash
     parsed = urllib.parse.urlsplit(url)
@@ -142,7 +149,8 @@ def load_markdown_documents(paths: List[str]) -> List[Document]:
     return docs
 
 
-def build_vectorstore(docs: List[Document], *, rebuild: bool = True): # '*'  basically means to force keyword args after this
+# '*'  basically means to force keyword args after this
+def build_vectorstore(docs: List[Document], *, rebuild: bool = True):
     if not docs:
         raise ValueError("No documents collected from crawl.")
 
@@ -190,7 +198,8 @@ def build_vectorstore(docs: List[Document], *, rebuild: bool = True): # '*'  bas
         vectorstore.delete(where={'source': source})
 
     vectorstore.add_documents(split_docs)
-    vectorstore.persist()
+   
+    
     print(
         f"Vector store updated incrementally. Total embeddings: {vectorstore._collection.count()}")
     return vectorstore

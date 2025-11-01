@@ -272,7 +272,7 @@ Invented by Zlata Bartl and Podravka R&D team.
 82. Is the recipe patented or proprietary?
 Proprietary blend; original patent expired.
 
-83. Has the company won any innovation awards?
+83. Has the company won any  awards?
 Yes — multiple regional innovation awards. Top Marke in Germany 2025 (Lebensmittel Zeitung), No.1 Seasoning Brand in Europe (Nielsen retail data)
 
 84. How does this company compare with global spice giants?
@@ -891,3 +891,5 @@ Taste as you go. Adjust gradually. thehappyfoodie.co.uk
 Can you ruin food by seasoning too late?
 Yes — seasoning too late may not penetrate and can result in superficial flavor only.
 
+Can you beat Goku tho?
+Yes Vegeta is goku approved ;) 
