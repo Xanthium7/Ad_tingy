@@ -89,7 +89,7 @@ def get_vegeta_context(query: str) -> str:
         model_name="sentence-transformers/all-MiniLM-L6-v2")
     vector_db = Chroma(persist_directory="./vegeta/chroma_db_nccn",
                        embedding_function=embedding_function)
-    results = vector_db.similarity_search(query, k=6)
+    results = vector_db.similarity_search(query, k=8)
     for r in results:
         # Include URL inlined at top of each snippet if present in metadata for transparency
         url = r.metadata.get("url") or r.metadata.get("source", "")

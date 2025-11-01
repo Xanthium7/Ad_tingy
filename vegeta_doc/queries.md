@@ -7,7 +7,7 @@ Several SKUs are gluten-free; others are not. Always check the allergen statemen
 3. Some products in your line-up are described as vegan/gluten-free etc. Are we to assume that the rest of the products in the line-up are not?
 Original contains MSG; Natur and No-MSG lines do not.
 
-4. Kindly provide additional information sources for each product in your line-up for Germany apart from your website, if any such information source is available.
+4. Does it have MSG ?
 Yes — Vegeta Natur and No-MSG variants have no added flavour enhancers.
 
 5. Data Source for pricing of Vegeta products in the target market.
